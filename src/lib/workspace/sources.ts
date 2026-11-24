@@ -35,6 +35,9 @@ export async function deleteSource(ws: Workspace, id: string) {
 
 export async function planUploads(ws: Workspace, input: Action<"upload-plan">) {
   const source = await ws.source(input.source_id);
+  if (source.demo) {
+    throw new RequestError("Add your files to a separate source. The demonstration source is reserved for fictional files.", 409);
+  }
   const existing = checked(await ws.db.from("source_files").select("*").eq("source_id", source.id).eq("user_id", ws.user)) ?? [];
   const paths = new Map(existing.map((file) => [file.relative_path.toLowerCase(), file]));
   const requested = new Set<string>();

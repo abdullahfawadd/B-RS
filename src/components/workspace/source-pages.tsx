@@ -161,7 +161,7 @@ export function Sources({ data, action, onCreate }: { data: WorkspaceData; actio
           <td>{formatDate(source.updated_at ?? source.created_at)}</td>
           <td><Menu label={`Actions for ${source.name}`}>
             <button type="button" onClick={() => selectSource(source.id)}>View files</button>
-            <button type="button" onClick={() => upload(source)}>Upload files</button>
+            <button type="button" disabled={source.demo} onClick={() => upload(source)}>Upload files</button>
             <button type="button" disabled={!fileGroups.get(source.id)?.count || pendingSources.has(source.id)} onClick={() => runBackup(source)}>Run backup</button>
             <Link href={`/workspace/backups?source=${encodeURIComponent(source.id)}`}>Backup history</Link>
             <button type="button" onClick={() => setModal({ title: "Edit source", content: (close) => <SourceEditor source={source} action={action} close={close} /> })}>Edit source</button>
@@ -172,7 +172,7 @@ export function Sources({ data, action, onCreate }: { data: WorkspaceData; actio
         <button type="button" className="brs-btn brs-primary" onClick={onCreate}><Plus size={16} /> New source</button>
       </Empty>}
     </Panel>
-    {active && <Panel title={active.name} description="Files registered for this backup source" action={<div className="brs-actions"><button type="button" className="brs-btn" onClick={() => upload(active)}><HardDriveUpload size={16} /> Upload files</button><button type="button" className="brs-btn brs-primary" disabled={!rows.length || pending} onClick={() => runBackup(active)}><Play size={15} /> Run backup</button></div>}>
+    {active && <Panel title={active.name} description="Files registered for this backup source" action={<div className="brs-actions"><button type="button" className="brs-btn" disabled={active.demo} title={active.demo ? "Demonstration sources contain fictional files only" : undefined} onClick={() => upload(active)}><HardDriveUpload size={16} /> Upload files</button><button type="button" className="brs-btn brs-primary" disabled={!rows.length || pending} onClick={() => runBackup(active)}><Play size={15} /> Run backup</button></div>}>
       {pending && <div className="brs-panel-body"><Notice>Retry or remove pending uploads before running a backup.</Notice></div>}
       {rows.length ? <Table headers={["File", "Size", "SHA-256", "Uploaded", ""]}>
         {rows.map((row) => <tr key={row.id}><td><span className="brs-table-label"><File size={16} /><strong>{row.relative_path || row.original_filename}</strong></span></td><td>{bytes(row.file_size)}</td>

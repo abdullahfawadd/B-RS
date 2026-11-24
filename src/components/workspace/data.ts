@@ -45,8 +45,13 @@ export const isFailed = (value?: string) => ["failed", "error", "corrupted", "mi
 export const failedCount = (test: RestoreTest) => test.failed_files ?? 0;
 export const isAvailable = (backup: Backup) => !["deleted", "deleting"].includes(backup.status ?? "");
 export const isVerified = (backup: Backup) => backup.status === "verified";
-export const formatDate = (value?: string | null) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—";
-export const dateOnly = (value?: string) => value ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(value)) : "—";
+function displayDate(value: string | null | undefined, options: Intl.DateTimeFormatOptions) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, options).format(date);
+}
+export const formatDate = (value?: string | null) => displayDate(value, { dateStyle: "medium", timeStyle: "short" });
+export const dateOnly = (value?: string) => displayDate(value, { month: "short", day: "numeric" });
 
 export function bytes(value?: number) {
   const amount = Number(value ?? 0);

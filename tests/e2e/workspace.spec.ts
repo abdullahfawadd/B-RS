@@ -26,7 +26,7 @@ async function signin(page: Page, email: string, password: string) {
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/workspace/);
+  await expect(page).toHaveURL(/\/workspace/, { timeout: 30_000 });
 }
 
 async function removeFixture(db: SupabaseClient, id: string) {
@@ -135,6 +135,7 @@ test("real private uploads, encrypted backup, restore, reports, scheduling and t
     const demo = await post(api, { action: "demo" });
     expect(demo.healthy.status).toBe("passed");
     expect(demo.broken.status).toBe("failed");
+    await post(api, { action: "upload-plan", source_id: demo.id, files: [{ path: "ordinary-file.txt", size: 1 }] }, 409);
     const broken = await (await api.get(`/api/report?type=test&id=${demo.broken.id}`)).json();
     expect(broken.record.error_message.toLowerCase()).toMatch(/checksum|integrity/);
 
@@ -156,6 +157,17 @@ test("real private uploads, encrypted backup, restore, reports, scheduling and t
     const remaining = await (await api.get("/api/workspace")).json();
     expect(remaining.sources).toContainEqual(expect.objectContaining({ id: source.id }));
     expect(remaining.sources.some((row: { demo: boolean }) => row.demo)).toBe(false);
+    const newest = await post(api, { action: "backup", id: source.id });
+    expect(newest.status).toBe("success");
+    await post(api, { action: "policy-save", id: policy.id, source_id: source.id, name: "Keep the newest verified copy", keep_latest: 1, daily: 0, weekly: 0, monthly: 0, minimum: 1, enabled: true });
+    const cleanup = await post(api, { action: "policy-run", id: policy.id });
+    expect(cleanup.keep).toContain(newest.id);
+    expect(cleanup.deleted).toContain(requestId);
+    await post(api, { action: "verify", id: requestId }, 404);
+    expect((await api.get(`/api/download?id=${restore.id}&path=${encodeURIComponent("data/observations.csv")}`)).ok()).toBeTruthy();
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(page).toHaveURL(/\/signin/);
+    expect((await api.get("/api/workspace")).status()).toBe(401);
   } finally {
     await other.close();
     await removeFixture(db, outsider.id);

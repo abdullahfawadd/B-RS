@@ -3,7 +3,7 @@
 ## Supabase
 
 1. Create a Supabase project dedicated to B‑RS. Set a strong database password and choose a region close to your Vercel function.
-2. In the Supabase SQL Editor, run the full SQL file under `supabase/migrations/` once. For CLI-managed deployments, use `supabase link --project-ref YOUR_PROJECT_REF` and `supabase db push` from the repository. The migration creates the data tables, row-level policies, restricted service functions and three private buckets. No Docker process is required.
+2. In the Supabase SQL Editor, run the SQL files under `supabase/migrations/` once in filename order. For CLI-managed deployments, use `supabase link --project-ref YOUR_PROJECT_REF` and `supabase db push` from the repository. The migration creates the data tables, row-level policies, restricted service functions and three private buckets. No Docker process is required.
 3. Under **Connect** or **Settings → API Keys**, copy the Project URL, publishable key and server-only secret key.
 4. In **Authentication → URL Configuration**, set the production Site URL and allow `https://YOUR_DOMAIN/auth/callback` and `http://localhost:3000/auth/callback` as redirect URLs. Keep email confirmation enabled for a public deployment. Configure custom SMTP for a public signup audience because Supabase's default mail service has restricted delivery. A demo evaluator can use an account provisioned through the project's Auth dashboard.
 5. Copy `.env.example` to `.env.local`. Set the project URL, keys and application URL. Generate each of the encryption and cron secrets independently with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Store the encryption key in a protected password manager. Keep these values out of Git.
