@@ -1,0 +1,92 @@
+{
+  "cases": [
+    [
+      "Vitest suite",
+      "All 32 tests passed. Coverage includes 26 engine cases plus scheduling and retention rules.",
+      "Passed"
+    ],
+    [
+      "Private backup and restore",
+      "A signed upload, encrypted snapshot, verified archive, repeated job ID, isolated restore, and byte-for-byte download were exercised against Supabase.",
+      "Passed"
+    ],
+    [
+      "Automated restore testing",
+      "Automatic and manual tests passed. The manual report verified both files. A corrupted copy failed the precheck. Recorded start and completion times matched the stored durations.",
+      "Passed"
+    ],
+    [
+      "Tenant isolation",
+      "A separate user could not access the source, private object, recovery endpoint, or test report. An untrusted audit insert was denied.",
+      "Passed"
+    ],
+    [
+      "Schedule and retention",
+      "The local run processed a due job. In production, retention deleted an older verified artifact, kept the required recovery point, and preserved previously restored files.",
+      "Passed"
+    ],
+    [
+      "Demo reset and sign-out",
+      "The demo rejected ordinary uploads. Reset removed the fictional records, preserved the ordinary source, and sign-out ended workspace access.",
+      "Passed"
+    ],
+    [
+      "Mobile browser",
+      "At 390 by 844 pixels, Chromium completed sign-in, source creation, direct upload, backup, an automatic test, and opening the evidence report.",
+      "Passed"
+    ]
+  ],
+  "validation_notes": [
+    "Both Playwright tests passed locally and on Vercel against a dedicated Supabase project. The final production run took 53.3 seconds. The local run processed an eligible job through the protected scheduler. The nightly Vercel dispatch remains an operational check.",
+    "ESLint, strict TypeScript, the production build, and all 32 Vitest cases passed. The mobile sweep ran against the local app and Vercel production and checked for horizontal overflow on Overview and Restore Test History."
+  ],
+  "summary": [
+    "The hosted-storage integration restored and verified both files in a 61-byte encrypted recovery example. The test report recorded 78 ms end to end, including 4 ms for the temporary restore and 1 ms for disk verification. The separate modified demo copy failed because its stored checksum differed. These are single fixture observations in the test environment."
+  ],
+  "fixture_scope": "These selected fields come from JSON reports exported during a Playwright run against the Vercel deployment and a dedicated hosted Supabase project. The fixtures contained fictional data.",
+  "manifest": {
+    "version": 1,
+    "files": [
+      {
+        "path": "data/observations.csv",
+        "size": 31,
+        "sha256": "33c37b0d6909c4df04b71953baca939a487b26ec0a9afc60625302420ab2f3b3"
+      },
+      {
+        "path": "readme.txt",
+        "size": 30,
+        "sha256": "7290c7246c47bbcc50ddb399abf80de3c3a98e33f9f75496877717fe78303ef2"
+      }
+    ]
+  },
+  "backup": {
+    "name": "Qualitative research files",
+    "original_size": 61,
+    "compressed_size": 667,
+    "encryption_enabled": true,
+    "encryption_version": 1,
+    "status": "verified",
+    "checksum": "45ded59bdd4434344041072723497e6e3e11436a72076c3e9b3d1f9ae3d1b5ea"
+  },
+  "restore_report": {
+    "trigger": "manual",
+    "status": "passed",
+    "files_tested": 2,
+    "files_verified": 2,
+    "failed_files": 0,
+    "bytes_restored": 61,
+    "duration_ms": 78,
+    "restore_duration_ms": 4,
+    "verification_duration_ms": 1
+  },
+  "verification": {
+    "archive_status": "corrupted",
+    "test_status": "failed",
+    "files_verified": 0,
+    "error_message": "The stored archive checksum does not match."
+  },
+  "publication": {
+    "GitHub repository": "https://github.com/abdullahfawadd/B-RS",
+    "Vercel application": "https://b-rs.vercel.app"
+  }
+}

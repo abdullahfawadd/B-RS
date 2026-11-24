@@ -2,6 +2,8 @@
 
 A Next.js workspace for private file backups, integrity verification, isolated recovery, and automated restore testing. Backup creation, archive verification, and a successful test restore are tracked separately.
 
+[Open the live application](https://b-rs.vercel.app)
+
 ## Run locally
 
 Use Node.js 24 and npm. Create a dedicated Supabase project, run the SQL migration, and populate `.env.local` using `.env.example`. Then run:
