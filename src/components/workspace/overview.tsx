@@ -51,8 +51,8 @@ function ActivityChart({ series }: { series: ReturnType<typeof daySeries> }) {
         <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} tickMargin={10} minTickGap={12} />
         <YAxis width={29} allowDecimals={false} domain={[0, active ? "auto" : 4]} axisLine={false} tickLine={false} tick={axisTick} />
         <Tooltip contentStyle={tooltip} cursor={{ fill: "#eff3fd" }} />
-        <Bar dataKey="backups" name="Succeeded" maxBarSize={23} fill="#355fd7" radius={[4, 4, 1, 1]} />
-        <Bar dataKey="failures" name="Failed" maxBarSize={23} fill="#d87b74" radius={[4, 4, 1, 1]} />
+        <Bar dataKey="backups" name="Succeeded" maxBarSize={23} fill="#355fd7" radius={[4, 4, 1, 1]} isAnimationActive={false} />
+        <Bar dataKey="failures" name="Failed" maxBarSize={23} fill="#d87b74" radius={[4, 4, 1, 1]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
     {!active && <div className="brs-chart-empty"><Activity size={17} /><span>No backup activity in this period</span></div>}
@@ -113,7 +113,7 @@ export function Overview({ data, observedAt }: { data: WorkspaceData; observedAt
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} tickMargin={9} minTickGap={12} />
             <YAxis width={52} tickFormatter={bytes} axisLine={false} tickLine={false} tick={axisTick} />
             <Tooltip contentStyle={tooltip} formatter={(value) => bytes(Number(value))} />
-            <Area type="monotone" dataKey="storage" name="Retained archives" fill="#edf2ff" stroke="#4371df" strokeWidth={2} />
+            <Area type="monotone" dataKey="storage" name="Retained archives" fill="#edf2ff" stroke="#4371df" strokeWidth={2} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer></div> : <Empty icon={HardDrive} title="No archives stored" description="Usage appears after a backup finishes." />}
       </Panel>

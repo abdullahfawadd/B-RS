@@ -105,6 +105,7 @@ test("real private uploads, encrypted backup, restore, reports, scheduling and t
     const reportData = await report.json();
     expect(report.headers()["content-disposition"]).toContain("attachment");
     expect(reportData.record).toMatchObject({ status: "passed", files_tested: 2, files_verified: 2, failed_files: 0, bytes_restored: content.length + small.length });
+    expect(Date.parse(reportData.record.completed_at) - Date.parse(reportData.record.started_at)).toBe(reportData.record.duration_ms);
     expect(reportData.backup.manifest.files).toContainEqual({ path: "data/observations.csv", size: content.length, sha256: createHash("sha256").update(content).digest("hex") });
     const schedule = await post(api, { action: "schedule-save", source_id: source.id, frequency: "daily", scheduled_time: "09:00", timezone: "Asia/Karachi", enabled: true });
     expect(schedule.id).toBeTruthy();
@@ -142,6 +143,7 @@ test("real private uploads, encrypted backup, restore, reports, scheduling and t
     await page.goto("/workspace");
     await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
     if (capture) {
+      await page.emulateMedia({ reducedMotion: "reduce" });
       await mkdir("docs/screenshots", { recursive: true });
       await mkdir(".qa", { recursive: true });
       await writeFile(".qa/restore-report.json", JSON.stringify(reportData, null, 2));
@@ -150,6 +152,7 @@ test("real private uploads, encrypted backup, restore, reports, scheduling and t
         await page.goto(`/workspace${section}`);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         await expect(page.getByText(owner.email, { exact: true }).first()).toBeAttached();
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
         await page.screenshot({ path: `docs/screenshots/${name}.png`, fullPage: true, animations: "disabled" });
       }
     }

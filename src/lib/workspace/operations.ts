@@ -24,7 +24,8 @@ export async function runBackup(ws: Workspace, sourceId: string, id: string = ra
   const job = checked(await ws.row("backup_jobs", id));
   if (job && job.source_id !== sourceId) throw new RequestError("Operation ID belongs to a different source.", 409);
   if (job && job.status !== "running") return { id, status: job.status };
-  if (!job) checked(await ws.db.from("backup_jobs").insert({ id, user_id: ws.user, source_id: sourceId, status: "running" }));
+  const jobStart = job?.started_at ?? required<{ started_at: string }>(checked(await ws.db.from("backup_jobs")
+    .insert({ id, user_id: ws.user, source_id: sourceId, status: "running" }).select("started_at").single()), "Backup job").started_at;
   const started = performance.now();
   const archivePath = `${ws.user}/${id}/archive.bin`;
   try {
@@ -65,8 +66,10 @@ export async function runBackup(ws: Workspace, sourceId: string, id: string = ra
       const persisted = checked(await ws.row("backups", id));
       if (persisted) return { id, status: "success" };
       await ws.deleteObjects("backup-archives", [archivePath]);
+      const duration = elapsed(started);
       checked(await ws.db.from("backup_jobs").update({
-        status: "failed", completed_at: isoNow(), duration_ms: elapsed(started), error_message: safeError(failure),
+        status: "failed", completed_at: new Date(Date.parse(jobStart) + duration).toISOString(),
+        duration_ms: duration, error_message: safeError(failure),
       }).eq("id", id).eq("user_id", ws.user).eq("status", "running"));
       await ws.audit("backup", "job", id, "failed", { error: safeError(failure) });
     } catch { /* An interrupted job can be resumed with the same operation ID. */ }
@@ -112,11 +115,22 @@ export async function runRestore(
   if (existing && existing.backup_id !== backupId) throw new RequestError("Operation ID belongs to a different backup.", 409);
   if (existing && existing.status !== "running") return { id, status: existing.status };
   const destination = `${ws.user}/${id}`;
-  if (!existing) checked(await ws.db.from(table).insert({
-    id, user_id: ws.user, backup_id: backupId, status: "running",
-    ...(test ? { trigger } : { restore_destination: destination }),
-  }));
   const started = performance.now();
+  // Start and completion timestamps use the same clock, even when Postgres is hosted elsewhere.
+  const startedAt = Date.now();
+  const started_at = new Date(startedAt).toISOString();
+  if (existing) {
+    checked(await ws.db.from(table).update({ started_at }).eq("id", id).eq("user_id", ws.user).eq("status", "running"));
+  } else {
+    checked(await ws.db.from(table).insert({
+      id, user_id: ws.user, backup_id: backupId, status: "running", started_at,
+      ...(test ? { trigger } : { restore_destination: destination }),
+    }));
+  }
+  const timing = () => {
+    const duration_ms = elapsed(started);
+    return { completed_at: new Date(startedAt + duration_ms).toISOString(), duration_ms };
+  };
   const written: string[] = [];
   try {
     if (!test && existing) {
@@ -125,7 +139,7 @@ export async function runRestore(
     const artifact = await readArchive(ws, point);
     const restored = await restoreToTemporary(artifact, point.checksum, ws.limits, encryptionKey(point.encryption_enabled), point.manifest);
     const common = {
-      completed_at: isoNow(), duration_ms: elapsed(started), restore_duration_ms: restored.restoreMs,
+      ...timing(), restore_duration_ms: restored.restoreMs,
       verification_duration_ms: restored.verificationMs, bytes_restored: restored.bytes,
     };
     if (test) {
@@ -156,7 +170,7 @@ export async function runRestore(
       output.push({ path: file.path, storage_path: storagePath, size: copy.length, sha256: digest });
     }
     checked(await ws.db.from(table).update({
-      ...common, completed_at: isoNow(), duration_ms: elapsed(started), verification_duration_ms: verification,
+      ...common, ...timing(), verification_duration_ms: verification,
       status: "success", files_restored: output.length, output_files: output,
     }).eq("id", id).eq("user_id", ws.user).eq("status", "running"));
     await ws.audit("restore", "restore", id, "success", { backup_id: backupId, files_restored: output.length });
@@ -168,7 +182,7 @@ export async function runRestore(
       if (persisted && persisted.status !== "running") return { id, status: persisted.status };
       await ws.deleteObjects("restored-files", written);
       checked(await ws.db.from(table).update({
-        status: "failed", error_message: message, completed_at: isoNow(), duration_ms: elapsed(started),
+        status: "failed", error_message: message, ...timing(),
         ...(test ? { verification_details: [{ stage: "restore", error: message }] } : {}),
       }).eq("id", id).eq("user_id", ws.user).eq("status", "running"));
       await ws.audit(test ? "restore_test" : "restore", test ? "restore_test" : "restore", id, "failed", { backup_id: backupId, error: message });
@@ -185,9 +199,11 @@ export async function makeCorruptedCopy(ws: Workspace, backupId: string) {
   const path = `${ws.user}/${id}/archive.bin`;
   const artifact = await readArchive(ws, point);
   artifact[Math.floor(artifact.length / 2)] ^= 1;
+  const preparedAt = isoNow();
   checked(await ws.db.from("backup_jobs").insert({
     id, user_id: ws.user, source_id: point.source_id, status: "failed",
-    completed_at: isoNow(), error_message: "Diagnostic copy was intentionally altered.",
+    started_at: preparedAt, completed_at: preparedAt, duration_ms: 0,
+    error_message: "Diagnostic copy was intentionally altered.",
   }));
   try {
     await ws.putObject("backup-archives", path, artifact);
